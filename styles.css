@@ -13,6 +13,12 @@ body {
     align-items: center;
     padding: 20px;
     color: #1A1A1A;
+    @media (max-width: 640px) {
+        padding: 0px;
+        padding-bottom: 20px;
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
 }
 
 .container {
@@ -21,6 +27,11 @@ body {
     max-width: 600px;
     width: 100%;
     padding: 40px;
+    @media (max-width: 640px) {
+        background: #F5F5F0;
+        border-radius: 0px;
+        min-height: 100vh;
+    }
 }
 
 header {
