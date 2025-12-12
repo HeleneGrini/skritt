@@ -10,6 +10,23 @@ function formatNumber(num) {
   return Math.round(num).toLocaleString("no-NO");
 }
 
+// Helper function to convert steps to kilometers
+// Average step length is approximately 0.8 meters, so 1 km ≈ 1250 steps
+function stepsToKilometers(steps) {
+  return steps / 1250;
+}
+
+// Helper function to format kilometers with appropriate decimals
+function formatKilometers(km) {
+  if (km >= 1000) {
+    return km.toLocaleString("no-NO", { maximumFractionDigits: 0 });
+  } else if (km >= 100) {
+    return km.toLocaleString("no-NO", { maximumFractionDigits: 1 });
+  } else {
+    return km.toLocaleString("no-NO", { maximumFractionDigits: 2 });
+  }
+}
+
 // Parse number from formatted string (removes spaces and formatting)
 function parseFormattedNumber(str) {
   return parseFloat(str.replace(/\s/g, "").replace(/,/g, ""));
@@ -122,28 +139,52 @@ function calculateSteps() {
   // Calculate steps remaining
   const stepsRemaining = yearlyGoal - stepsTaken;
 
-  // Check if goal is already achieved
+  // Check if goal is already achieved or exceeded
   if (stepsRemaining <= 0) {
-    showResult(
-      `Gratulerer! Du har allerede nådd målet ditt!`,
-      `Du har tatt ${formatNumber(
-        stepsTaken
-      )} skritt, som overgår målet ditt på ${formatNumber(
-        goalAverage
-      )} skritt per dag.`
-    );
+    // Calculate minimum average needed to maintain goal
+    const stepsNeededToMaintain = yearlyGoal - stepsTaken;
+    const minAverageToMaintain = stepsNeededToMaintain / remainingDays;
+
+    if (minAverageToMaintain <= 0) {
+      // They can have 0 steps for the rest of the year
+      showResult(
+        `Gratulerer! Du har allerede nådd målet ditt!`,
+        `Du har tatt ${formatNumber(
+          stepsTaken
+        )} skritt, som er mer enn nok til å nå målet ditt på ${formatNumber(
+          goalAverage
+        )} skritt per dag. Du kan ha 0 skritt resten av året og fortsatt nå målet.`
+      );
+    } else {
+      // They need a minimum average to maintain the goal
+      showResult(
+        `Gratulerer! Du har allerede nådd målet ditt!`,
+        `Du har tatt ${formatNumber(
+          stepsTaken
+        )} skritt. For å opprettholde målet ditt på ${formatNumber(
+          goalAverage
+        )} skritt per dag, trenger du minimum ${formatNumber(
+          minAverageToMaintain
+        )} skritt per dag i gjennomsnitt for de ${remainingDays} gjenstående dagene.`
+      );
+    }
     return;
   }
 
   // Calculate average needed per day
   const averageNeeded = stepsRemaining / remainingDays;
 
+  // Calculate kilometers for remaining steps
+  const kilometersRemaining = stepsToKilometers(stepsRemaining);
+
   // Display result
   showResult(
     `${formatNumber(averageNeeded)} skritt per dag`,
     `Du trenger ${formatNumber(
       stepsRemaining
-    )} flere skritt over ${remainingDays} gjenstående dager.`
+    )} flere skritt over ${remainingDays} gjenstående dager.<br><br>Det er ca. ${formatKilometers(
+      kilometersRemaining
+    )} km!`
   );
 }
 
@@ -152,7 +193,7 @@ function showResult(value, details) {
   errorContainer.classList.add("hidden");
   resultContainer.classList.remove("hidden");
   resultValue.textContent = value;
-  resultDetails.textContent = details;
+  resultDetails.innerHTML = details;
 }
 
 // Show error
@@ -202,13 +243,38 @@ currentAverageInput.addEventListener("blur", () => {
   formatNumberInput(currentAverageInput);
 });
 
+// Helper function to preserve cursor position when filtering input
+function filterNumericInput(input) {
+  const cursorPosition = input.selectionStart;
+  const oldValue = input.value;
+
+  // Count numeric characters before cursor
+  const textBeforeCursor = oldValue.substring(0, cursorPosition);
+  const numericCharsBeforeCursor = textBeforeCursor.replace(
+    /[^\d]/g,
+    ""
+  ).length;
+
+  // Remove non-numeric characters
+  const newValue = oldValue.replace(/[^\d]/g, "");
+
+  // Set new value
+  input.value = newValue;
+
+  // Calculate new cursor position based on number of numeric characters before cursor
+  const newCursorPosition = Math.min(numericCharsBeforeCursor, newValue.length);
+
+  // Restore cursor position
+  input.setSelectionRange(newCursorPosition, newCursorPosition);
+}
+
 // Allow only numbers while typing
 yearlyGoalInput.addEventListener("input", (e) => {
-  e.target.value = e.target.value.replace(/[^\d]/g, "");
+  filterNumericInput(e.target);
 });
 
 currentAverageInput.addEventListener("input", (e) => {
-  e.target.value = e.target.value.replace(/[^\d]/g, "");
+  filterNumericInput(e.target);
 });
 
 // Event listener for form submission
